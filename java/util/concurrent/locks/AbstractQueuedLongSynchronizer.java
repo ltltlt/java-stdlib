@@ -50,6 +50,7 @@ import sun.misc.Unsafe;
  * may be useful when creating synchronizers such as
  * multilevel locks and barriers that require
  * 64 bits of state.
+ * 和AbstractQueuedSynchronizer的不同是state是long而不是int
  *
  * <p>See {@link AbstractQueuedSynchronizer} for usage
  * notes and examples.

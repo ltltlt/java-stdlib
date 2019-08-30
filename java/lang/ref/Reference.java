@@ -207,6 +207,7 @@ public abstract class Reference<T> {
             return true;
         }
 
+        // 两种情况不会入这个引用的reference queue, 一种是这个queue是NULL时, 另一种是这个引用是cleaner(神奇逻辑)
         // Fast path for cleaners
         if (c != null) {
             c.clean();

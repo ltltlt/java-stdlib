@@ -336,7 +336,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     static final int hash(Object key) {
         int h;
-        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);   // 允许null
     }
 
     /**
@@ -417,6 +417,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The next size value at which to resize (capacity * load factor).
+     * 到达时扩容
      *
      * @serial
      */
@@ -572,6 +573,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 ((k = first.key) == key || (key != null && key.equals(k))))
                 return first;
             if ((e = first.next) != null) {
+                // 第一个节点可能是树节点或链表
                 if (first instanceof TreeNode)
                     return ((TreeNode<K,V>)first).getTreeNode(hash, key);
                 do {
@@ -615,7 +617,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Implements Map.put and related methods.
      *
-     * @param hash hash for key
+     * @param hash hash for key, 原始hash, 未必<tab的长度
      * @param key the key
      * @param value the value to put
      * @param onlyIfAbsent if true, don't change existing value
@@ -1091,6 +1093,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         return null;
     }
 
+    // 找不到时计算
     @Override
     public V computeIfAbsent(K key,
                              Function<? super K, ? extends V> mappingFunction) {
@@ -1145,6 +1148,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         return v;
     }
 
+    // 找到时计算, 如果计算得到null, 移除这一项
     public V computeIfPresent(K key,
                               BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         if (remappingFunction == null)
@@ -1779,6 +1783,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     // Callbacks to allow LinkedHashMap post-actions
+    // 到处都是模板
     void afterNodeAccess(Node<K,V> p) { }
     void afterNodeInsertion(boolean evict) { }
     void afterNodeRemoval(Node<K,V> p) { }
@@ -1809,7 +1814,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         TreeNode<K,V> left;
         TreeNode<K,V> right;
         TreeNode<K,V> prev;    // needed to unlink next upon deletion
-        boolean red;
+        boolean red;    // rbtree
         TreeNode(int hash, K key, V val, Node<K,V> next) {
             super(hash, key, val, next);
         }
@@ -1827,6 +1832,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
         /**
          * Ensures that the given root is the first node of its bin.
+         * 保证给定的root是bin的第一项
          */
         static <K,V> void moveRootToFront(Node<K,V>[] tab, TreeNode<K,V> root) {
             int n;
@@ -1854,10 +1860,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
          * Finds the node starting at root p with the given hash and key.
          * The kc argument caches comparableClassFor(key) upon first use
          * comparing keys.
+         * kc用来比较k(key compare)
          */
         final TreeNode<K,V> find(int h, Object k, Class<?> kc) {
             TreeNode<K,V> p = this;
             do {
+                // 因为用key的hash作为bst的key, 所以会出现bst中key相同的情况
                 int ph, dir; K pk;
                 TreeNode<K,V> pl = p.left, pr = p.right, q;
                 if ((ph = p.hash) > h)
@@ -1895,6 +1903,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
          * order, just a consistent insertion rule to maintain
          * equivalence across rebalancings. Tie-breaking further than
          * necessary simplifies testing a bit.
+         * 当两个key的hashCode相同, 并且不可比较时调用
          */
         static int tieBreakOrder(Object a, Object b) {
             int d;
@@ -1908,6 +1917,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
         /**
          * Forms tree of the nodes linked from this node.
+         * 将一个链表转为一颗树, api设计的挺奇怪的
          */
         final void treeify(Node<K,V>[] tab) {
             TreeNode<K,V> root = null;
@@ -1917,7 +1927,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 if (root == null) {
                     x.parent = null;
                     x.red = false;
-                    root = x;
+                    root = x;   // 根是黑节点
                 }
                 else {
                     K k = x.key;
@@ -1954,6 +1964,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         /**
          * Returns a list of non-TreeNodes replacing those linked from
          * this node.
+         * 将一个树转回链表
          */
         final Node<K,V> untreeify(HashMap<K,V> map) {
             Node<K,V> hd = null, tl = null;
@@ -2221,15 +2232,17 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             return root;
         }
 
+        // 平衡插入(实际上已经插入, 现在是调整使红黑树性质仍然满足), 返回新的根节点
         static <K,V> TreeNode<K,V> balanceInsertion(TreeNode<K,V> root,
                                                     TreeNode<K,V> x) {
+            // 默认是红, 如果是黑会导致这个子树黑节点高度比其他地方大1, 难调整
             x.red = true;
             for (TreeNode<K,V> xp, xpp, xppl, xppr;;) {
-                if ((xp = x.parent) == null) {
+                if ((xp = x.parent) == null) {  // 是根节点
                     x.red = false;
                     return x;
                 }
-                else if (!xp.red || (xpp = xp.parent) == null)
+                else if (!xp.red || (xpp = xp.parent) == null)  // 父是黑或无祖父(父是root); 理论上父是root则其必然是黑
                     return root;
                 if (xp == (xppl = xpp.left)) {
                     if ((xppr = xpp.right) != null && xppr.red) {

@@ -189,6 +189,8 @@ public abstract class ClassLoader {
 
     /**
      * Encapsulates the set of parallel capable loader types.
+     * 封装了能并行加载的加载器的集合
+     * jdk1.7引入并行加载, 能避免死锁
      */
     private static class ParallelLoaders {
         private ParallelLoaders() {}
@@ -278,6 +280,7 @@ public abstract class ClassLoader {
 
     private ClassLoader(Void unused, ClassLoader parent) {
         this.parent = parent;
+        // 如果开启并行加载, 则每个类名一个锁
         if (ParallelLoaders.isRegistered(this.getClass())) {
             parallelLockMap = new ConcurrentHashMap<>();
             package2certs = new ConcurrentHashMap<>();

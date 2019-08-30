@@ -279,6 +279,7 @@ public class Launcher {
     static class AppClassLoader extends URLClassLoader {
 
         static {
+            // 可并行加载
             ClassLoader.registerAsParallelCapable();
         }
 
@@ -305,7 +306,7 @@ public class Launcher {
             });
         }
 
-        final URLClassPath ucp;
+        final URLClassPath ucp; // 父类urlclassloader也有一个ucp, 是private, debug时发现这个ucp和urlclassloader的指向同一个
 
         /*
          * Creates a new AppClassLoader

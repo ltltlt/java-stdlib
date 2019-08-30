@@ -2383,6 +2383,8 @@ public final class Class<T> implements java.io.Serializable,
     /**
      * Add a package name prefix if the name is not absolute Remove leading "/"
      * if name is absolute
+     * 添加包名前缀如果不是以/开头(相对路径, 但对类加载器来说都是classpath绝对路径)
+     * 包名通过查找这个类的包名得到
      */
     private String resolveName(String name) {
         if (name == null) {
@@ -2400,6 +2402,7 @@ public final class Class<T> implements java.io.Serializable,
                     +"/"+name;
             }
         } else {
+            // 如果以/开头, 去掉/, 因为classloader本来就是以绝对路径找的
             name = name.substring(1);
         }
         return name;

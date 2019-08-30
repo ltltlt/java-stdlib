@@ -125,17 +125,20 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         /**
          * Performs non-fair tryLock.  tryAcquire is implemented in
          * subclasses, but both need nonfair try for trylock method.
+         * 施展不公平tryLock, 返回true表示成功, 不需要重试
          */
         final boolean nonfairTryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
+                // 当前此锁未被占有, 则尝试占有
                 if (compareAndSetState(0, acquires)) {
                     setExclusiveOwnerThread(current);
                     return true;
                 }
-            }
-            else if (current == getExclusiveOwnerThread()) {
+            } else if (current == getExclusiveOwnerThread()) {
+                // 可重入锁, 重入了不阻塞
+                // 只有当前线程可以修改state(拥有这个锁), 所以修改是安全的
                 int nextc = c + acquires;
                 if (nextc < 0) // overflow
                     throw new Error("Maximum lock count exceeded");
@@ -147,7 +150,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
 
         protected final boolean tryRelease(int releases) {
             int c = getState() - releases;
-            if (Thread.currentThread() != getExclusiveOwnerThread())
+            if (Thread.currentThread() != getExclusiveOwnerThread())    // 确保当前线程占有这个同步器
                 throw new IllegalMonitorStateException();
             boolean free = false;
             if (c == 0) {
@@ -232,13 +235,16 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
+                // 基本逻辑和nonfairTryAcquire一样, 只是多了hasQueuedPredecessors检查, 检查是否有入队的前缀
+                // 只有此线程当前占有锁或此线程在同步器队列前面没有其他线程时才会拿到锁
+                // 如果状态不是0, 也就是此锁已经被获得, 则一切通nonfairTryAcquire
+                // 这个方法的代码应该和nonfairTryAcquire可以重用
                 if (!hasQueuedPredecessors() &&
                     compareAndSetState(0, acquires)) {
                     setExclusiveOwnerThread(current);
                     return true;
                 }
-            }
-            else if (current == getExclusiveOwnerThread()) {
+            } else if (current == getExclusiveOwnerThread()) {
                 int nextc = c + acquires;
                 if (nextc < 0)
                     throw new Error("Maximum lock count exceeded");

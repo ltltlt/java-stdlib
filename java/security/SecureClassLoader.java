@@ -76,6 +76,7 @@ public class SecureClassLoader extends ClassLoader {
         super(parent);
         // this is to make the stack depth consistent with 1.1
         SecurityManager security = System.getSecurityManager();
+        // 检查是否有创建类加载器的权限
         if (security != null) {
             security.checkCreateClassLoader();
         }

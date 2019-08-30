@@ -78,6 +78,7 @@ import java.util.*;
  * according to the bounds set by
  * corePoolSize (see {@link #getCorePoolSize}) and
  * maximumPoolSize (see {@link #getMaximumPoolSize}).
+ * 线程池执行器会自动调整池大小根据corePoolSize和maximumPoolSize
  *
  * When a new task is submitted in method {@link #execute(Runnable)},
  * and fewer than corePoolSize threads are running, a new thread is
@@ -93,7 +94,7 @@ import java.util.*;
  * dynamically using {@link #setCorePoolSize} and {@link
  * #setMaximumPoolSize}. </dd>
  *
- * <dt>On-demand construction</dt>
+ * <dt>On-demand(按需) construction</dt>
  *
  * <dd>By default, even core threads are initially created and
  * started only when new tasks arrive, but this can be overridden
@@ -348,7 +349,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      *   SHUTDOWN: Don't accept new tasks, but process queued tasks
      *   STOP:     Don't accept new tasks, don't process queued tasks,
      *             and interrupt in-progress tasks
-     *   TIDYING:  All tasks have terminated, workerCount is zero,
+     *   TIDYING(清理中):  All tasks have terminated, workerCount is zero,
      *             the thread transitioning to state TIDYING
      *             will run the terminated() hook method
      *   TERMINATED: terminated() has completed
@@ -379,7 +380,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * below).
      */
     private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
-    private static final int COUNT_BITS = Integer.SIZE - 3;
+    private static final int COUNT_BITS = Integer.SIZE - 3; // 3位存状态, 29位存worker count, 这样打包容易一个cas解决很多问题
     private static final int CAPACITY   = (1 << COUNT_BITS) - 1;
 
     // runState is stored in the high-order bits

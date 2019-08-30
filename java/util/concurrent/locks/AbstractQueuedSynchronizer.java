@@ -404,15 +404,19 @@ public abstract class AbstractQueuedSynchronizer
          *               first indicate they need a signal,
          *               then retry the atomic acquire, and then,
          *               on failure, block.
+         *               这个节点的后继经由park阻塞了, 故当前节点必须unpark其
+         *               后继当其释放或取消了
          *   CANCELLED:  This node is cancelled due to timeout or interrupt.
          *               Nodes never leave this state. In particular,
          *               a thread with cancelled node never again blocks.
+         *               这个节点由于超时或中断被取消. 节点不会离开这个状态
          *   CONDITION:  This node is currently on a condition queue.
          *               It will not be used as a sync queue node
          *               until transferred, at which time the status
          *               will be set to 0. (Use of this value here has
          *               nothing to do with the other uses of the
          *               field, but simplifies mechanics.)
+         *               这个线程当前在condition的队列中
          *   PROPAGATE:  A releaseShared should be propagated to other
          *               nodes. This is set (for head node only) in
          *               doReleaseShared to ensure propagation
@@ -787,23 +791,27 @@ public abstract class AbstractQueuedSynchronizer
      * Checks and updates status for a node that failed to acquire.
      * Returns true if thread should block. This is the main signal
      * control in all acquire loops.  Requires that pred == node.prev.
+     * 对于一个失败acquire的节点, 检查和更新其状态
+     * 如果此线程应该被阻塞, 返回true. 这是在所有acquire循环中的主要信号处理
      *
      * @param pred node's predecessor holding status
      * @param node the node
      * @return {@code true} if thread should block
      */
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
-        int ws = pred.waitStatus;
+        int ws = pred.waitStatus;   // 查看前一个节点的等待状态
         if (ws == Node.SIGNAL)
             /*
              * This node has already set status asking a release
              * to signal it, so it can safely park.
              */
             return true;
-        if (ws > 0) {
+        if (ws > 0) {   // 目前只有CANCELLED > 0
             /*
              * Predecessor was cancelled. Skip over predecessors and
              * indicate retry.
+             * 一直往前走到一个非CANCELLED的节点, 将此节点设为pred, 此节点的后一个节点设置为node
+             * 相当于把CANCELLED的节点全部舍弃了
              */
             do {
                 node.prev = pred = pred.prev;
@@ -849,6 +857,9 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * Acquires in exclusive uninterruptible mode for thread already in
      * queue. Used by condition wait methods as well as acquire.
+     * 用互斥非可中断的模式acquire, 对于已经在队列中的线程
+     * 如果在等待中此线程被interrupt了, 则返回true, 否则返回false
+     * 可以看出, 即使被中断也不会退出循环
      *
      * @param node the node
      * @param arg the acquire argument
@@ -860,7 +871,7 @@ public abstract class AbstractQueuedSynchronizer
             boolean interrupted = false;
             for (;;) {
                 final Node p = node.predecessor();
-                if (p == head && tryAcquire(arg)) {
+                if (p == head && tryAcquire(arg)) { // 只有当前节点的前缀是head时才tryAcquire(多线程同时acquire, 只有一个执行tryAcquire)
                     setHead(node);
                     p.next = null; // help GC
                     failed = false;
@@ -878,6 +889,7 @@ public abstract class AbstractQueuedSynchronizer
 
     /**
      * Acquires in exclusive interruptible mode.
+     * 互斥可打断的interrupt
      * @param arg the acquire argument
      */
     private void doAcquireInterruptibly(int arg)
@@ -1197,7 +1209,7 @@ public abstract class AbstractQueuedSynchronizer
     public final void acquire(int arg) {
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
-            selfInterrupt();
+            selfInterrupt();    // 实际上好像这操作没什么用, acquireQueued返回true就表示这个线程被打断了
     }
 
     /**

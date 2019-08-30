@@ -257,6 +257,9 @@ public class ReentrantReadWriteLock
          * Lock state is logically divided into two unsigned shorts:
          * The lower one representing the exclusive (writer) lock hold count,
          * and the upper the shared (reader) hold count.
+         * 读写计数提取常量和函数
+         * (用status)锁状态被分为两个short, 低位表示持有互斥锁的数目
+         * 高位表示持有共享锁的数目
          */
 
         static final int SHARED_SHIFT   = 16;
@@ -310,32 +313,40 @@ public class ReentrantReadWriteLock
          *
          * <p>Accessed via a benign data race; relies on the memory
          * model's final field and out-of-thin-air guarantees.
+         *
+         * 运气好时避免了读ThreadLocal
          */
         private transient HoldCounter cachedHoldCounter;
 
         /**
          * firstReader is the first thread to have acquired the read lock.
          * firstReaderHoldCount is firstReader's hold count.
+         * firstReader是第一个成功获得读锁的线程
+         * firstReaderHoldCount是firstReader这个线程占有的读锁数目
          *
          * <p>More precisely, firstReader is the unique thread that last
          * changed the shared count from 0 to 1, and has not released the
          * read lock since then; null if there is no such thread.
+         * 更精确地说, firstReader是最后将shared count从0改为1的且未释放锁的线程
          *
          * <p>Cannot cause garbage retention unless the thread terminated
          * without relinquishing its read locks, since tryReleaseShared
          * sets it to null.
+         * 不会导致垃圾保留除非线程未释放其读锁就终止了
          *
          * <p>Accessed via a benign data race; relies on the memory
          * model's out-of-thin-air guarantees for references.
          *
          * <p>This allows tracking of read holds for uncontended read
          * locks to be very cheap.
+         * 这导致跟踪非竞态的读锁变得很廉价
          */
         private transient Thread firstReader = null;
         private transient int firstReaderHoldCount;
 
         Sync() {
             readHolds = new ThreadLocalHoldCounter();
+            // 保证readHolds的可见性(volatile变量的操作会保证前面的操作都同步到内存中了)
             setState(getState()); // ensures visibility of readHolds
         }
 
@@ -371,7 +382,7 @@ public class ReentrantReadWriteLock
                 throw new IllegalMonitorStateException();
             int nextc = getState() - releases;
             boolean free = exclusiveCount(nextc) == 0;
-            if (free)
+            if (free)   // 持有互斥锁(写锁)的数目为0
                 setExclusiveOwnerThread(null);
             setState(nextc);
             return free;
@@ -382,9 +393,9 @@ public class ReentrantReadWriteLock
              * Walkthrough:
              * 1. If read count nonzero or write count nonzero
              *    and owner is a different thread, fail.
-             * 2. If count would saturate, fail. (This can only
+             * 2. If count would saturate(饱和), fail. (This can only
              *    happen if count is already nonzero.)
-             * 3. Otherwise, this thread is eligible for lock if
+             * 3. Otherwise, this thread is eligible(有资格的) for lock if
              *    it is either a reentrant acquire or
              *    queue policy allows it. If so, update state
              *    and set owner.
@@ -412,6 +423,7 @@ public class ReentrantReadWriteLock
         protected final boolean tryReleaseShared(int unused) {
             Thread current = Thread.currentThread();
             if (firstReader == current) {
+                // 只有一个线程会进入这里
                 // assert firstReaderHoldCount > 0;
                 if (firstReaderHoldCount == 1)
                     firstReader = null;
@@ -431,7 +443,7 @@ public class ReentrantReadWriteLock
             }
             for (;;) {
                 int c = getState();
-                int nextc = c - SHARED_UNIT;
+                int nextc = c - SHARED_UNIT;    // shared count的最小单位
                 if (compareAndSetState(c, nextc))
                     // Releasing the read lock has no effect on readers,
                     // but it may allow waiting writers to proceed if
@@ -520,6 +532,8 @@ public class ReentrantReadWriteLock
                                     readHolds.remove();
                             }
                         }
+                        // 可以阻塞, 返回负数表示失败, AQS里实现阻塞逻辑
+                        // 不可以阻塞时就用CAS自旋直到成功获得资源(state更新)
                         if (rh.count == 0)
                             return -1;
                     }
@@ -557,6 +571,7 @@ public class ReentrantReadWriteLock
             int c = getState();
             if (c != 0) {
                 int w = exclusiveCount(c);
+                // 读锁被获得或写锁被其他线程获得
                 if (w == 0 || current != getExclusiveOwnerThread())
                     return false;
                 if (w == MAX_COUNT)
@@ -629,10 +644,12 @@ public class ReentrantReadWriteLock
             return exclusiveCount(getState()) != 0;
         }
 
+        // 返回当前线程获得的write lock数目
         final int getWriteHoldCount() {
             return isHeldExclusively() ? exclusiveCount(getState()) : 0;
         }
 
+        // 返回当前线程获得的read lock数目
         final int getReadHoldCount() {
             if (getReadLockCount() == 0)
                 return 0;
@@ -652,6 +669,7 @@ public class ReentrantReadWriteLock
 
         /**
          * Reconstitutes the instance from a stream (that is, deserializes it).
+         * 字节流到此对象
          */
         private void readObject(java.io.ObjectInputStream s)
             throws java.io.IOException, ClassNotFoundException {
@@ -669,7 +687,7 @@ public class ReentrantReadWriteLock
     static final class NonfairSync extends Sync {
         private static final long serialVersionUID = -8159625535654395037L;
         final boolean writerShouldBlock() {
-            return false; // writers can always barge
+            return false; // writers can always barge(闯入)
         }
         final boolean readerShouldBlock() {
             /* As a heuristic to avoid indefinite writer starvation,

@@ -34,16 +34,8 @@ import sun.misc.VM;
 import sun.nio.ch.DirectBuffer;
 
 
-class DirectByteBuffer
-
-    extends MappedByteBuffer
-
-
-
-    implements DirectBuffer
+class DirectByteBuffer extends MappedByteBuffer implements DirectBuffer
 {
-
-
 
     // Cached unsafe-access object
     protected static final Unsafe unsafe = Bits.unsafe();
@@ -66,8 +58,6 @@ class DirectByteBuffer
     public Object attachment() {
         return att;
     }
-
-
 
     private static class Deallocator
         implements Runnable
@@ -102,16 +92,6 @@ class DirectByteBuffer
 
     public Cleaner cleaner() { return cleaner; }
 
-
-
-
-
-
-
-
-
-
-
     // Primary constructor
     //
     DirectByteBuffer(int cap) {                   // package-private
@@ -138,12 +118,7 @@ class DirectByteBuffer
         }
         cleaner = Cleaner.create(this, new Deallocator(base, size, cap));
         att = null;
-
-
-
     }
-
-
 
     // Invoked to construct a direct ByteBuffer referring to the block of
     // memory. A given arbitrary object may also be attached to the buffer.
@@ -173,17 +148,11 @@ class DirectByteBuffer
                                      FileDescriptor fd,
                                      Runnable unmapper)
     {
-
         super(-1, 0, cap, cap, fd);
         address = addr;
         cleaner = Cleaner.create(this, unmapper);
         att = null;
-
-
-
     }
-
-
 
     // For duplicates and slices
     //
@@ -191,16 +160,12 @@ class DirectByteBuffer
                                int mark, int pos, int lim, int cap,
                                int off)
     {
-
         super(mark, pos, lim, cap);
         address = db.address() + off;
 
         cleaner = null;
 
         att = db;
-
-
-
     }
 
     public ByteBuffer slice() {
@@ -230,9 +195,6 @@ class DirectByteBuffer
                                            this.limit(),
                                            this.capacity(),
                                            0);
-
-
-
     }
 
 
@@ -253,12 +215,6 @@ class DirectByteBuffer
         return ((unsafe.getByte(ix(checkIndex(i)))));
     }
 
-
-
-
-
-
-
     public ByteBuffer get(byte[] dst, int offset, int length) {
 
         if (((long)length << 0) > Bits.JNI_COPY_TO_ARRAY_THRESHOLD) {
@@ -270,13 +226,6 @@ class DirectByteBuffer
             if (length > rem)
                 throw new BufferUnderflowException();
 
-
-
-
-
-
-
-
                 Bits.copyToArray(ix(pos), dst, arrayBaseOffset,
                                  (long)offset << 0,
                                  (long)length << 0);
@@ -285,29 +234,18 @@ class DirectByteBuffer
             super.get(dst, offset, length);
         }
         return this;
-
-
-
     }
-
-
 
     public ByteBuffer put(byte x) {
 
         unsafe.putByte(ix(nextPutIndex()), ((x)));
         return this;
-
-
-
     }
 
     public ByteBuffer put(int i, byte x) {
 
         unsafe.putByte(ix(checkIndex(i)), ((x)));
         return this;
-
-
-
     }
 
     public ByteBuffer put(ByteBuffer src) {
@@ -346,9 +284,6 @@ class DirectByteBuffer
             super.put(src);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer put(byte[] src, int offset, int length) {
@@ -362,14 +297,6 @@ class DirectByteBuffer
             if (length > rem)
                 throw new BufferOverflowException();
 
-
-
-
-
-
-
-
-
                 Bits.copyFromArray(src, arrayBaseOffset,
                                    (long)offset << 0,
                                    ix(pos),
@@ -379,9 +306,6 @@ class DirectByteBuffer
             super.put(src, offset, length);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer compact() {
@@ -396,9 +320,6 @@ class DirectByteBuffer
         limit(capacity());
         discardMark();
         return this;
-
-
-
     }
 
     public boolean isDirect() {
@@ -409,83 +330,13 @@ class DirectByteBuffer
         return false;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     byte _get(int i) {                          // package-private
         return unsafe.getByte(address + i);
     }
 
     void _put(int i, byte b) {                  // package-private
-
         unsafe.putByte(address + i, b);
-
-
-
     }
-
-
-
 
     private char getChar(long a) {
         if (unaligned) {
@@ -503,8 +354,6 @@ class DirectByteBuffer
         return getChar(ix(checkIndex(i, (1 << 1))));
     }
 
-
-
     private ByteBuffer putChar(long a, char x) {
 
         if (unaligned) {
@@ -514,27 +363,18 @@ class DirectByteBuffer
             Bits.putChar(a, x, bigEndian);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer putChar(char x) {
 
         putChar(ix(nextPutIndex((1 << 1))), x);
         return this;
-
-
-
     }
 
     public ByteBuffer putChar(int i, char x) {
 
         putChar(ix(checkIndex(i, (1 << 1))), x);
         return this;
-
-
-
     }
 
     public CharBuffer asCharBuffer() {
@@ -605,27 +445,18 @@ class DirectByteBuffer
             Bits.putShort(a, x, bigEndian);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer putShort(short x) {
 
         putShort(ix(nextPutIndex((1 << 1))), x);
         return this;
-
-
-
     }
 
     public ByteBuffer putShort(int i, short x) {
 
         putShort(ix(checkIndex(i, (1 << 1))), x);
         return this;
-
-
-
     }
 
     public ShortBuffer asShortBuffer() {
@@ -696,27 +527,18 @@ class DirectByteBuffer
             Bits.putInt(a, x, bigEndian);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer putInt(int x) {
 
         putInt(ix(nextPutIndex((1 << 2))), x);
         return this;
-
-
-
     }
 
     public ByteBuffer putInt(int i, int x) {
 
         putInt(ix(checkIndex(i, (1 << 2))), x);
         return this;
-
-
-
     }
 
     public IntBuffer asIntBuffer() {
@@ -787,27 +609,18 @@ class DirectByteBuffer
             Bits.putLong(a, x, bigEndian);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer putLong(long x) {
 
         putLong(ix(nextPutIndex((1 << 3))), x);
         return this;
-
-
-
     }
 
     public ByteBuffer putLong(int i, long x) {
 
         putLong(ix(checkIndex(i, (1 << 3))), x);
         return this;
-
-
-
     }
 
     public LongBuffer asLongBuffer() {
@@ -878,27 +691,18 @@ class DirectByteBuffer
             Bits.putFloat(a, x, bigEndian);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer putFloat(float x) {
 
         putFloat(ix(nextPutIndex((1 << 2))), x);
         return this;
-
-
-
     }
 
     public ByteBuffer putFloat(int i, float x) {
 
         putFloat(ix(checkIndex(i, (1 << 2))), x);
         return this;
-
-
-
     }
 
     public FloatBuffer asFloatBuffer() {
@@ -969,9 +773,6 @@ class DirectByteBuffer
             Bits.putDouble(a, x, bigEndian);
         }
         return this;
-
-
-
     }
 
     public ByteBuffer putDouble(double x) {
@@ -979,17 +780,12 @@ class DirectByteBuffer
         putDouble(ix(nextPutIndex((1 << 3))), x);
         return this;
 
-
-
     }
 
     public ByteBuffer putDouble(int i, double x) {
 
         putDouble(ix(checkIndex(i, (1 << 3))), x);
         return this;
-
-
-
     }
 
     public DoubleBuffer asDoubleBuffer() {

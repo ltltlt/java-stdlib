@@ -39,6 +39,7 @@ import sun.misc.Unsafe;
 /**
  * Basic thread blocking primitives for creating locks and other
  * synchronization classes.
+ * 基本线程阻塞原语用于创建锁和其他同步类
  *
  * <p>This class associates, with each thread that uses it, a permit
  * (in the sense of the {@link java.util.concurrent.Semaphore
@@ -144,6 +145,7 @@ public class LockSupport {
     /**
      * Disables the current thread for thread scheduling purposes unless the
      * permit is available.
+     * 禁止当前线程被线程调度除非被允许
      *
      * <p>If the permit is available then it is consumed and the call returns
      * immediately; otherwise
@@ -153,17 +155,21 @@ public class LockSupport {
      * <ul>
      * <li>Some other thread invokes {@link #unpark unpark} with the
      * current thread as the target; or
+     * 其他线程使用当前线程调用unpark
      *
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread; or
+     * 其他线程中断(interrupt)当前线程
      *
      * <li>The call spuriously (that is, for no reason) returns.
+     * 调用虚假地返回
      * </ul>
      *
      * <p>This method does <em>not</em> report which of these caused the
      * method to return. Callers should re-check the conditions which caused
      * the thread to park in the first place. Callers may also determine,
      * for example, the interrupt status of the thread upon return.
+     * 此方法不报告返回的原因, 调用者应该在之后检查原因
      *
      * @param blocker the synchronization object responsible for this
      *        thread parking
